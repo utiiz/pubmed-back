@@ -33,7 +33,7 @@ class MyHTMLParser(HTMLParser):
                             else:
                                 obj[current_property] = t[2].strip()
                         elif current_property == "PT":
-                            obj[current_property] += "\n" + t[2].strip()
+                            obj[current_property] += " - " + t[2].strip()
                     else:
                         obj[current_property] += " " + line.strip()
                 self.result.append(obj)
@@ -57,33 +57,25 @@ def getPubmed(event, context):
     }
 
     data = json.loads(event['body'])
-    response = {
-        "statusCode": 200,
-        "headers": {
-            "content-type": "application/json"
-        },
-        "body": json.dumps(data)
-    }
-    return response
-    # if 'url' in data:
-    #
-    #     # link = "https://pubmed.ncbi.nlm.nih.gov/?term=(glucose)+and+(continuous)+and+(monitoring+or+measurement)+and+(diabetes)&filter=pubt.guideline&filter=pubt.meta-analysis&filter=pubt.systematicreview&filter=datesearch.y_10&filter=hum_ani.humans&filter=lang.english&filter=lang.french&timeline=expanded&format=pubmed&size=200&page=1"
-    #     f = urlopen(data['url'])
-    #     myfile = f.read().decode("utf8")
-    #     parser = MyHTMLParser()
-    #     parser.feed(myfile)
-    #     print(parser.result)
-    #
-    #     response = {
-    #         "statusCode": 200,
-    #         "headers": {
-    #             "content-type": "application/json"
-    #         },
-    #         "body": json.dumps(parser.result)
-    #     }
-    #
-    #     return response
-    # return {"error": "No URL found in data"}
+    if 'url' in data:
+   
+        # link = "https://pubmed.ncbi.nlm.nih.gov/?term=(glucose)+and+(continuous)+and+(monitoring+or+measurement)+and+(diabetes)&filter=pubt.guideline&filter=pubt.meta-analysis&filter=pubt.systematicreview&filter=datesearch.y_10&filter=hum_ani.humans&filter=lang.english&filter=lang.french&timeline=expanded&format=pubmed&size=200&page=1"
+        f = urlopen(data['url'])
+        myfile = f.read().decode("utf8")
+        parser = MyHTMLParser()
+        parser.feed(myfile)
+        print(parser.result)
+
+        response = {
+            "statusCode": 200,
+            "headers": {
+                "content-type": "application/json"
+            },
+            "body": json.dumps(parser.result)
+        }
+   
+        return response
+    return {"error": "No URL found in data"}
 
     # Use this code if you don't use the http event with the LAMBDA-PROXY
     # integration
