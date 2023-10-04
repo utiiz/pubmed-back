@@ -2,12 +2,14 @@ from html.parser import HTMLParser
 from urllib.request import urlopen
 import csv
 import json
+import boto3
 
 class MyHTMLParser(HTMLParser):
     def __init__(self):
         super().__init__()
         self.should_print = False
         self.result = []
+        self.url = ""
     def handle_starttag(self, tag, attrs):
         if not self.should_print and tag in ("pre") :
             self.should_print = True
@@ -33,20 +35,23 @@ class MyHTMLParser(HTMLParser):
                             else:
                                 obj[current_property] = t[2].strip()
                         elif current_property == "PT":
-                            obj[current_property] += " - " + t[2].strip()
+                            obj[current_property] += "\n" + t[2].strip()
                     else:
                         obj[current_property] += " " + line.strip()
                 self.result.append(obj)
-            # with open('students.csv', 'w', newline='', encoding='utf-8') as file:
-            #     writer = csv.writer(file)
-            #
-            #     writer.writerow(["Titre", "Auteur", "Date", "Type", "Link"])
-            #     for r in result:
-            #         link = "https://pubmed.ncbi.nlm.nih.gov/" + r["PMID"]
-            #         if "AU" in r:
-            #             writer.writerow([r["TI"], r["AU"], r["DP"], r["PT"], link])
-            #         elif "CN" in r:
-            #             writer.writerow([r["TI"], r["CN"], r["DP"], r["PT"], link])
+
+            filename = 'pubmed-result.csv'
+            with open("/tmp/" + filename, 'w', newline='', encoding='utf-8') as file:
+                writer = csv.writer(file, delimiter=';')
+
+                writer.writerow(["Titre", "Auteur", "Date", "Type", "Link"])
+                for r in self.result:
+                    link = "https://pubmed.ncbi.nlm.nih.gov/" + r["PMID"]
+                    writer.writerow([r["TI"], r.get("AU") or r.get("CN") or "", r["DP"], r["PT"], link])
+            bucket = "pubmed-sql.click"
+            s3 = boto3.client("s3")
+            s3.upload_file("/tmp/" + filename, bucket, filename)
+            self.url = "https://s3.eu-west-3.amazonaws.com/" + bucket + "/" + filename
 
 
 
@@ -64,14 +69,13 @@ def getPubmed(event, context):
         myfile = f.read().decode("utf8")
         parser = MyHTMLParser()
         parser.feed(myfile)
-        print(parser.result)
 
         response = {
             "statusCode": 200,
             "headers": {
                 "content-type": "application/json"
             },
-            "body": json.dumps(parser.result)
+            "body": json.dumps(parser.url)
         }
    
         return response
